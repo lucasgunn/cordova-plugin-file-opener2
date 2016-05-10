@@ -23,14 +23,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package io.github.pwlin.cordova.plugins.fileopener2;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.channels.FileChannel;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Intent;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Environment;
 //import android.util.Log;
 
 import org.apache.cordova.CordovaPlugin;
@@ -91,12 +97,21 @@ public class FileOpener2 extends CordovaPlugin {
 		File file = new File(fileName);
 		if (file.exists()) {
 			try {
-				Uri path = Uri.fromFile(file);
+				File publicFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), file.getName());
+				System.out.println(file);
+				System.out.println(publicFile);
+				try {
+					copyFile(file, publicFile);	
+				} catch (IOException err) {
+					JSONObject errorObj = new JSONObject();
+					errorObj.put("status", PluginResult.Status.ERROR.ordinal());
+					errorObj.put("message", "Couldn't copy to shared storage: " + err.getMessage());
+					callbackContext.error(errorObj);
+					return;
+				}
+				Uri path = Uri.fromFile(publicFile);
 				Intent intent = new Intent(Intent.ACTION_VIEW);
-				// intent.setDataAndType(path, contentType);
-				intent.setData(path);
-				intent.putExtra(Intent.EXTRA_STREAM, path);
-				intent.setType(contentType);
+				intent.setDataAndType(path, contentType);
 				intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 				/*
 				 * @see
@@ -105,6 +120,16 @@ public class FileOpener2 extends CordovaPlugin {
 				cordova.getActivity().startActivity(intent);
 				//cordova.getActivity().startActivity(Intent.createChooser(intent,"Open File in..."));
 				callbackContext.success();
+				// Do this so it shows in the downloads 'app', and can be cleaned up
+				/*cordova.getActivity().getSystemService(Context.DOWNLOAD_SERVICE).addCompletedDownload(
+					file.getName(), 
+					file.getName(), 
+					true, 
+					contentType, 
+					publicFile.getAbsolutePath(), 
+					0, 
+					false
+				);*/
 			} catch (android.content.ActivityNotFoundException e) {
 				JSONObject errorObj = new JSONObject();
 				errorObj.put("status", PluginResult.Status.ERROR.ordinal());
@@ -151,6 +176,19 @@ public class FileOpener2 extends CordovaPlugin {
 			uriString = uriString.substring(7);
 		}
 		return uriString;
+	}
+
+	private static void copyFile(File src, File dst) throws IOException {
+	    FileChannel inChannel = new FileInputStream(src).getChannel();
+	    FileChannel outChannel = new FileOutputStream(dst).getChannel();
+	    try {
+	        inChannel.transferTo(0, inChannel.size(), outChannel);
+	    } finally {
+	        if (inChannel != null)
+	            inChannel.close();
+	        if (outChannel != null)
+	            outChannel.close();
+	    }
 	}
 
 }
