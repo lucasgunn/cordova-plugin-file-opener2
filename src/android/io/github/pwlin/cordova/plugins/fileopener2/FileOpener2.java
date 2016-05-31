@@ -37,6 +37,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Environment;
+import android.app.DownloadManager;
 //import android.util.Log;
 
 import org.apache.cordova.CordovaPlugin;
@@ -87,6 +88,7 @@ public class FileOpener2 extends CordovaPlugin {
 
 	private void _open(String fileArg, String contentType, CallbackContext callbackContext) throws JSONException {
 		String fileName = "";
+		DownloadManager dlManager;
 		try {
 			CordovaResourceApi resourceApi = webView.getResourceApi();
 			Uri fileUri = resourceApi.remapUri(Uri.parse(fileArg));
@@ -121,15 +123,16 @@ public class FileOpener2 extends CordovaPlugin {
 				//cordova.getActivity().startActivity(Intent.createChooser(intent,"Open File in..."));
 				callbackContext.success();
 				// Do this so it shows in the downloads 'app', and can be cleaned up
-				/*cordova.getActivity().getSystemService(Context.DOWNLOAD_SERVICE).addCompletedDownload(
+				dlManager = (DownloadManager)cordova.getActivity().getSystemService(Context.DOWNLOAD_SERVICE);
+				dlManager.addCompletedDownload(
 					file.getName(), 
 					file.getName(), 
 					true, 
 					contentType, 
 					publicFile.getAbsolutePath(), 
 					0, 
-					false
-				);*/
+					true
+				);
 			} catch (android.content.ActivityNotFoundException e) {
 				JSONObject errorObj = new JSONObject();
 				errorObj.put("status", PluginResult.Status.ERROR.ordinal());
@@ -137,6 +140,8 @@ public class FileOpener2 extends CordovaPlugin {
 				callbackContext.error(errorObj);
 			}
 		} else {
+			System.out.println(file);
+			System.out.println("^^ File not found - can't open");
 			JSONObject errorObj = new JSONObject();
 			errorObj.put("status", PluginResult.Status.ERROR.ordinal());
 			errorObj.put("message", "File not found");
