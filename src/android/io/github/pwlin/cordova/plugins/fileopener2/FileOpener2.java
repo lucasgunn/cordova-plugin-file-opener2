@@ -100,8 +100,6 @@ public class FileOpener2 extends CordovaPlugin {
 		if (file.exists()) {
 			try {
 				File publicFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), file.getName());
-				System.out.println(file);
-				System.out.println(publicFile);
 				try {
 					copyFile(file, publicFile);	
 				} catch (IOException err) {
@@ -130,7 +128,7 @@ public class FileOpener2 extends CordovaPlugin {
 					true, 
 					contentType, 
 					publicFile.getAbsolutePath(), 
-					0, 
+					file.length(), 
 					true
 				);
 			} catch (android.content.ActivityNotFoundException e) {
@@ -140,8 +138,6 @@ public class FileOpener2 extends CordovaPlugin {
 				callbackContext.error(errorObj);
 			}
 		} else {
-			System.out.println(file);
-			System.out.println("^^ File not found - can't open");
 			JSONObject errorObj = new JSONObject();
 			errorObj.put("status", PluginResult.Status.ERROR.ordinal());
 			errorObj.put("message", "File not found");
